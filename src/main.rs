@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 
 use crsf::{Packet, PacketAddress, RcChannels};
 use gilrs::{Axis, Button, Event, Gilrs};
-use serialport::SerialPort;
 
 // Convert standard RC PWM microseconds (1000us - 2000us)
 // into CRSF 11bit representation (172 - 1811)
@@ -11,15 +10,16 @@ fn us_to_crsf(us: u16) -> u16 {
     (172.0 + ((clamped_us - 1000.0) / 1000.0) * 1639.0).round() as u16
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let port_name = "/dev/ttyUSB0";
-    let baud_rate = 921600;
+const PORT_NAME: &str =
+    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0";
+const BAUD_RATE: u32 = 921600;
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "Opening serial port: {} at baud: {}...",
-        port_name, baud_rate
+        PORT_NAME, BAUD_RATE
     );
-    let mut serial = serialport::new(port_name, baud_rate)
+    let mut serial = serialport::new(PORT_NAME, BAUD_RATE)
         .timeout(Duration::from_millis(10))
         .open()?;
 
@@ -38,30 +38,78 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // set 16 channels to midpoint
-    let mut channels: [u16; 16] = [1500; 16];
-    // set throttle pins to minimum for safety
-    channels[2] = 1000;
+    let mut channels_us: [u16; 16] = [1500; 16];
+    // If any esc or whatever require a startup value, define it here (for now)
+    // example:
+    // channels_us[2] = 1000;
 
     println!("\nCRSF Controller Streaming Begin...");
-    println!("Press South to change channel 4");
+    println!("Press South to change channel 3");
     println!("Move Right Joystick to change channels 1 & 2");
     println!("Live CRSF Packets:\n");
 
     let mut last_send = Instant::now();
+
+    enum InputType {
+        Button {
+            channel: usize,
+            button: gilrs::Button,
+        },
+        Joystick {
+            channel: usize,
+            axis: gilrs::Axis,
+        },
+    }
+
+    let inputs: Vec<InputType> = vec![
+        // InputType::Button {
+        /*
+        InputType::Joystick {
+            channel: 2,
+            // button: Button::South,
+            axis: Axis::RightStickY,
+        },
+        */
+        InputType::Joystick {
+            channel: 0,
+            axis: Axis::LeftStickY,
+        },
+        InputType::Joystick {
+            channel: 1,
+            axis: Axis::RightStickY,
+            // axis: Axis::LeftStickX,
+        },
+    ];
 
     loop {
         while let Some(Event { id, event, .. }) = g.next_event() {
             active = Some(id);
 
             // handle button presses
+            /*
             match event {
                 gilrs::EventType::ButtonPressed(Button::South, _) => {
-                    channels[3] += 100;
-                    if channels[3] > 2000 {
-                        channels[3] = 1000;
+                    channels_us[2] += 100;
+                    if channels_us[2] > 2000 {
+                        channels_us[2] = 1000;
                     }
                 }
                 _ => {}
+            }
+            */
+
+            if let gilrs::EventType::ButtonPressed(pressed, _) = event {
+                for input in &inputs {
+                    if let InputType::Button { channel, button } = input {
+                        if *button == pressed {
+                            channels_us[*channel] += 100;
+                            if channels_us[*channel] > 2000 {
+                                // channels_us[*channel] = 1000;
+                                channels_us[*channel] = 1500;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -69,18 +117,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(id) = active {
             let gamepad = g.gamepad(id);
 
-            let rx = gamepad.value(Axis::RightStickX);
+            /*
+            let ly = gamepad.value(Axis::LeftStickY);
             let ry = gamepad.value(Axis::RightStickY);
 
-            let us_ch1 = (1500.0 + (rx * 500.0)).clamp(1000.0, 2000.0) as u16;
-            let us_ch2 = (1500.0 + (ry * 500.0)).clamp(1000.0, 2000.0) as u16;
+            channels_us[0] = (1500.0 + (ly * 500.0)).clamp(1000.0, 2000.0) as u16;
+            channels_us[1] = (1500.0 + (ry * 500.0)).clamp(1000.0, 2000.0) as u16;
+            */
 
-            channels[0] = us_to_crsf(us_ch1);
-            channels[1] = us_to_crsf(us_ch2);
+            for input in &inputs {
+                if let InputType::Joystick { channel, axis } = input {
+                    let v = gamepad.value(*axis);
+                    channels_us[*channel] = (1500.0 + (v * 500.0)).clamp(1000.0, 2000.0) as u16;
+                }
+            }
         }
 
         if last_send.elapsed() >= Duration::from_millis(20) {
-            let packet = Packet::RcChannels(RcChannels(channels));
+            let mut crsf = [0u16; 16];
+            for i in 0..16 {
+                crsf[i] = us_to_crsf(channels_us[i]);
+            }
+            let packet = Packet::RcChannels(RcChannels(crsf));
             let raw_packet = packet.into_raw(PacketAddress::Transmitter);
             if let Err(e) = serial.write_all(raw_packet.data()) {
                 eprintln!("Failed to write to serial port: {}", e);
