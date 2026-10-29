@@ -1,0 +1,95 @@
+Config(
+    version: Version(2,3,4),
+
+    link: Link(
+        port: "/dev/null",
+        baud: 921600,
+        packet_rate_hz: 50, // 20ms
+        timeout_ms: 250,
+        idle_us: 1500,
+    ),
+
+    inputs: {
+        "left_stick": Axis(
+            source: LeftStickY,
+            invert: false,
+        ),
+        "right_stick": Axis(
+            source: RightStickY,
+            invert: false,  
+        ),
+        "weapon_button_up": Button(
+            source: East,
+        ),
+        "weapon_button_down": Button(
+            source: West,  
+        ),
+    },
+
+    behaviors: {
+        "weapon_step": Step(
+            up: On("weapon_button_up"),
+            down: On("weapon_button_down"),
+            reset: Never,
+            by: 100.0,
+            min: 1500.0,
+            max: 2000.0,
+            at_min: Clamp,
+            at_max: Clamp,
+            reset_to: 1500.0,
+            init: 1500.0,
+        ),
+    },
+
+    drive: Skid(
+        source: Tank(
+            left: "left_stick",
+            right: "right_stick",
+        ),
+        left: ["left"],
+        right: ["right"],
+        gain: Fixed(1.0),
+        reversed_when: Never,
+        normalize: false,
+    ),
+
+    gates: {
+        "all": Gate(
+            chord: [Start, Select],
+            hold_ms: 1000,
+        ),
+    },
+
+    outputs: {
+        "left": Motor(
+            channel: 0,
+            source: "left",
+            scale: 1.0,
+            invert: false,
+            range: (1000, 2000),
+            slew: Unlimited,
+            init: 1500,
+            enabled_by: ["all"],
+        ),
+        "right": Motor(
+            channel: 1,
+            source: "right",
+            scale: 1.0,
+            invert: false,
+            range: (1000, 2000),
+            slew: Unlimited,
+            init: 1500,
+            enabled_by: ["all"],
+        ),
+        "weapon": Motor(
+            channel: 2,
+            source: "weapon_step",
+            scale: 1.0,
+            invert: false,
+            range: (1000, 2000),
+            slew: Unlimited,
+            init: 1500,
+            enabled_by: ["all"],
+        ),
+    },
+)
