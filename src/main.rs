@@ -50,10 +50,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut last_send = Instant::now();
 
+    enum WeaponIncrementDirection {
+        UP,
+        DOWN,
+        ZERO,
+    }
+
     enum InputType {
         Button {
             channel: usize,
             button: gilrs::Button,
+            direction: WeaponIncrementDirection,
         },
         Joystick {
             channel: usize,
@@ -62,14 +69,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let inputs: Vec<InputType> = vec![
-        // InputType::Button {
-        /*
-        InputType::Joystick {
+        InputType::Button {
             channel: 2,
-            // button: Button::South,
-            axis: Axis::RightStickY,
+            button: Button::South,
+            direction: WeaponIncrementDirection::UP,
+        },
+        /*
+        InputType::Button {
+            channel: 2,
+            button: Button::North,
+            direction: WeaponIncrementDirection::ZERO,
+        },
+        InputType::Button {
+            channel: 2,
+            button: Button::West,
+            direction: WeaponIncrementDirection::DOWN,
         },
         */
+
         InputType::Joystick {
             channel: 0,
             axis: Axis::LeftStickY,
@@ -85,8 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         while let Some(Event { id, event, .. }) = g.next_event() {
             active = Some(id);
 
-            // handle button presses
             /*
+            // handle button presses
             match event {
                 gilrs::EventType::ButtonPressed(Button::South, _) => {
                     channels_us[2] += 100;
@@ -100,8 +117,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if let gilrs::EventType::ButtonPressed(pressed, _) = event {
                 for input in &inputs {
-                    if let InputType::Button { channel, button } = input {
+                    if let InputType::Button { channel, button, direction } = input {
                         if *button == pressed {
+                            /*
+                            match direction {
+                                WeaponIncrementDirection::UP {
+
+                                }
+                            }
+                            */
                             channels_us[*channel] += 100;
                             if channels_us[*channel] > 2000 {
                                 // channels_us[*channel] = 1000;
