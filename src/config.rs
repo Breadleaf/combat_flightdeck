@@ -71,8 +71,8 @@ pub(crate) enum Behavior {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SelectOption {
-    on: String,
-    value: f32,
+    pub(crate) on: String,
+    pub(crate) value: f32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -157,7 +157,7 @@ pub(crate) enum Slew {
     PerSecond(u32), // µs
 }
 
-pub(crate) const CONFIG_VERSION: Version = Version(1, 2, 3);
+pub(crate) const CONFIG_VERSION: Version = Version(0, 0, 1);
 
 pub(crate) fn load_config(path: &str) -> Result<Config, String> {
     let raw_text = fs::read_to_string(path).map_err(|e| format!("cannot read {path}: {e}"))?;

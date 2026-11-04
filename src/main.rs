@@ -1,6 +1,7 @@
-use std::{env, path};
+use std::{env, path, process};
 
 mod config;
+mod validate;
 
 fn get_filepath_from_env() -> String {
     env::args()
@@ -24,16 +25,20 @@ fn validate_filepath(path: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_config(config: &config::Config) -> Result<(), String> {
-    Ok(())
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     let path = get_filepath_from_env();
     validate_filepath(&path)?;
     let config = config::load_config(&path)?;
-    validate_config(&config)?;
+    crate::validate::validate(&config)
+        .map_err(|errs| format!("invalid config:\n  {}", errs.join("\n  ")))?;
     println!("Successfully loaded config version {:?}!", config.version);
     println!("{:#?}", config);
     Ok(())
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("{}", e);
+        process::exit(1);
+    }
 }

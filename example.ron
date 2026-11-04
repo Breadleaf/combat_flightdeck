@@ -1,4 +1,5 @@
 Config(
+    // version: Version(0,0,1),
     version: Version(2,3,4),
 
     link: Link(
@@ -6,7 +7,8 @@ Config(
         baud: 921600,
         packet_rate_hz: 50, // 20ms
         timeout_ms: 250,
-        idle_us: 1500,
+        // idle_us: 1500,
+        idle_us: 0,
     ),
 
     inputs: {
