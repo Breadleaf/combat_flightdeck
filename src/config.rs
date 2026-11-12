@@ -157,7 +157,7 @@ pub(crate) enum Slew {
     PerSecond(u32), // µs
 }
 
-pub(crate) const CONFIG_VERSION: Version = Version(0, 0, 1);
+pub(crate) const CONFIG_VERSION: Version = Version(0, 1, 0);
 
 pub(crate) fn load_config(path: &str) -> Result<Config, String> {
     let raw_text = fs::read_to_string(path).map_err(|e| format!("cannot read {path}: {e}"))?;

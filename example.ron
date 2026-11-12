@@ -1,5 +1,5 @@
 Config(
-    version: Version(0,0,1),
+    version: Version(0, 1, 0),
 
     link: Link(
         port: "/dev/null",
