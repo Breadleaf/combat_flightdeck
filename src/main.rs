@@ -1,6 +1,8 @@
 use std::{env, path, process};
 
 mod config;
+mod hardware;
+mod runtime;
 mod validate;
 
 fn get_filepath_from_env() -> String {
@@ -29,11 +31,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let path = get_filepath_from_env();
     validate_filepath(&path)?;
     let config = config::load_config(&path)?;
-    crate::validate::validate(&config)
-        .map_err(|errs| format!("invalid config:\n  {}", errs.join("\n  ")))?;
-    println!("Successfully loaded config version {:?}!", config.version);
-    println!("{:#?}", config);
-    Ok(())
+    let runtime = runtime::Runtime::new(&config)
+        .map_err(|errs| format!("invalid config:\n {}", errs.join("\n ")))?;
+    println!("successfully loaded the config {:?}!", config.version);
+    hardware::run(&config, runtime)
 }
 
 fn main() {
