@@ -1,0 +1,9 @@
+Setup(
+    version: (0, 1, 0),
+    robots: {
+        "robot": (
+            controller: "",
+            config: "./example.ron",
+        ),
+    },
+)

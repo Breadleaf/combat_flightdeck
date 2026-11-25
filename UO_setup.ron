@@ -1,0 +1,9 @@
+Setup(
+    version: (0, 1, 0),
+    robots: {
+        "unplanned obsolescence": (
+            controller: "/dev/null",
+            config: "./UO_config.ron",
+        ),
+    },
+)

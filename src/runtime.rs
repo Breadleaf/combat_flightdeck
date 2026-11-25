@@ -277,6 +277,17 @@ impl<'a> Runtime<'a> {
             .collect()
     }
 
+    pub fn used_channels(&self) -> Vec<usize> {
+        self.config
+            .outputs
+            .values()
+            .map(|o| {
+                let Output::Motor { channel, .. } = o;
+                *channel as usize
+            })
+            .collect()
+    }
+
     fn update_gates(&mut self, input: &Inputs, dt_ms: f32) {
         for (n, g) in &self.config.gates {
             let st = self
